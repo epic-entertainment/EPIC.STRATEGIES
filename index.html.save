@@ -1,0 +1,138 @@
+==========<!DOCTYPE html>
+<html>
+<head>
+  <title>Gomoku</title>
+
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(30, 18px);
+      grid-template-rows: repeat(30, 18px);
+      gap: 1px;
+      width: max-content;
+      margin: 20px auto;
+    }================================
+
+    .cell {
+      width: 18px;
+      height: 18px;
+      background: #ddd;
+      cursor: pointer;
+    }
+
+    .cell.p1 {
+      background: black;
+    }
+
+    .cell.p2 {
+      background: white;
+      border: 1px solid black;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      margin: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Gomoku</h1>
+
+<button onclick="createGame()">Start Game</button>
+
+<p id="status">Not started</p>
+
+<div id="board"></div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+let gameId = null;
+let currentPlayer = "p1";
+
+async function createGame() {
+  const res = await fetch(API + "/games", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ players: ["p1", "p2"] })
+  });
+
+  const data = await res.json();
+
+  gameId = data.game_id;
+  currentPlayer = "p1";
+
+  document.getElementById("status").innerText =
+    "Game started. Turn: " + currentPlayer;
+
+  renderBoard(data.board);
+}
+
+function renderBoard(boardData) {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+
+  for (let y = 0; y < boardData.length; y++) {
+    for (let x = 0; x < boardData[y].length; x++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      if (boardData[y][x] === "p1") {
+        cell.classList.add("p1");
+      } else if (boardData[y][x] === "p2") {
+        cell.classList.add("p2");
+      }
+
+      cell.onclick = () => makeMove(x, y);
+
+      board.appendChild(cell);
+    }
+  }
+}
+
+async function makeMove(x, y) {
+  if (!gameId) return;
+
+  const res = await fetch(API + "/move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      game_id: gameId,
+      player: currentPlayer,
+      x: x,
+      y: y
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.detail) {
+    alert(data.detail);
+    return;
+  }
+
+  renderBoard(data.board);
+
+  if (data.winner) {
+    document.getElementById("status").innerText =
+      "Winner: " + data.winner;
+    return;
+  }
+
+  currentPlayer = data.next_turn;
+
+  document.getElementById("status").innerText =
+    "Turn: " + currentPlayer;
+}
+</script>
+
+</body>
+</html>

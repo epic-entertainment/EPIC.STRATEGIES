@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EPIC STRATEGIES</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: transparent;
+      color: white;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* TEXT OUTLINE */
+    body, h1, h2, h3, p, button, #status, #timer, #clues {
+      text-shadow:
+        -1px -1px 0 black,
+         1px -1px 0 black,
+        -1px  1px 0 black,
+         1px  1px 0 black,
+         0px  0px 6px black;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 12px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: rgba(0,0,0,0.9);
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(30, 14px);
+      grid-template-rows: repeat(30, 14px);
+      gap: 1px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .cell {
+      width: 14px;
+      height: 14px;
+      background: #d2a679;
+      cursor: pointer;
+    }
+
+    .cell:hover {
+      outline: 2px solid white;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body data-bg-mode="page">
+
+<div class="container">
+
+  <!-- MENU -->
+  <div id="menu">
+    <h1>EPIC STRATEGIES</h1>
+    <button onclick="showPage('playMenu')">PLAY</button>
+    <button onclick="showPage('cluePage')">GET A CLUE</button>
+    <button onclick="showPage('howTo')">HOW TO PLAY</button>
+    
+    <button onclick="openDonate(buymeacoffee.com/aldobla1982)">🧋ADOPT A DEV🍰</button>
+  </div>
+
+  <!-- PLAY MENU -->
+  <div id="playMenu" style="display:none;">
+    <h2>Select Mode</h2>
+    <button onclick="startGame(2)">2 Players</button>
+    <button onclick="startGame(3)">3 Players</button>
+    <button onclick="startGame(4)">4 Players</button>
+    <button onclick="showPage('menu')">BACK</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="gamePage" style="display:none;">
+    <h2>Game</h2>
+    <div id="status"></div>
+    <div id="board"></div>
+    <button onclick="showPage('menu')">EXIT</button>
+  </div>
+
+  <!-- CLUE -->
+  <div id="cluePage" style="display:none;">
+    <h2>Clues</h2>
+    <button onclick="watchAd()">WATCH AD</button>
+    <div id="clues">Clues: 0</div>
+    <button onclick="showPage('menu')">BACK</button>
+  </div>
+
+  <!-- HOW TO -->
+  <div id="howTo" style="display:none;">
+    <h2>How to Play</h2>
+    <p>2 Players → Connect 5</p>
+    <p>3 Players → Connect 4</p>
+    <p>4 Players → Connect 3</p>
+    <button onclick="showPage('menu')">BACK</button>
+  </div>
+
+</div>
+
+<script src="/static/js/random-background.js"></script>
+
+<script>
+const API = "http://127.0.0.1:8001";
+
+let gameId = null;
+let currentPlayer = "p1";
+let players = [];
+let clues = 0;
+
+function showPage(page) {
+  ["menu","playMenu","gamePage","cluePage","howTo"].forEach(id => {
+    document.getElementById(id).style.display = "none";
+  });
+  document.getElementById(page).style.display = "block";
+}
+
+function startGame(count) {
+  showPage("gamePage");
+  createGame(count);
+}
+
+async function createGame(count) {
+  const map = {
+    2: ["p1","p2"],
+    3: ["p1","p2","p3"],
+    4: ["p1","p2","p3","p4"]
+  };
+
+  players = map[count];
+  currentPlayer = players[0];
+
+  const res = await fetch(API + "/games", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(players)
+  });
+
+  const data = await res.json();
+  gameId = data.game_id;
+
+  document.getElementById("status").innerText = "Turn: " + currentPlayer;
+  renderBoard(data.board);
+}
+
+function renderBoard(board) {
+  const boardDiv = document.getElementById("board");
+  boardDiv.innerHTML = "";
+
+  board.forEach((row,y)=>{
+    row.forEach((cell,x)=>{
+      const div = document.createElement("div");
+      div.className = "cell";
+
+      if(cell){
+        div.style.background =
+          cell==="p1"?"black":
+          cell==="p2"?"white":
+          cell==="p3"?"blue":"green";
+      }
+
+      div.onclick = ()=>makeMove(x,y);
+      boardDiv.appendChild(div);
+    });
+  });
+}
+
+async function makeMove(x,y){
+  if(!gameId) return;
+
+  const res = await fetch(API+"/move",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      game_id:gameId,
+      player:currentPlayer,
+      x,y
+    })
+  });
+
+  if(!res.ok) return;
+
+  const data = await res.json();
+  renderBoard(data.board);
+
+  if(data.winner){
+    document.getElementById("status").innerText="Winner: "+data.winner;
+    gameId=null;
+    return;
+  }
+
+  currentPlayer=data.next_turn;
+  document.getElementById("status").innerText="Turn: "+currentPlayer;
+}
+
+function watchAd(){
+  alert("Ad...");
+  setTimeout(()=>{
+    clues+=2;
+    document.getElementById("clues").innerText="Clues: "+clues;
+  },1000);
+}
+</script>
+
+</body>
+</html>
