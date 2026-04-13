@@ -14,9 +14,14 @@ from pydantic import BaseModel
 
 from game_models import find_threat
 
+
 app = FastAPI()
+
+# Serve static folders
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# CORS (allow all for now)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -57,16 +62,12 @@ Base.metadata.create_all(bind=engine)
 
 
 # ---------------------------
-# ROOT
+# ROOT (SERVE FRONTEND)
 # ---------------------------
 @app.get("/")
-def root():
-    return {"status": "Gomoku backend running"}
-
-
-@app.get("/index.html")
-def serve_index():
+def serve_frontend():
     return FileResponse("index.html")
+
 
 # ---------------------------
 # AUTH
