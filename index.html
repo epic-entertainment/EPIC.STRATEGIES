@@ -13,7 +13,6 @@
       justify-content: center;
     }
 
-    /* TEXT OUTLINE */
     body, h1, h2, h3, p, button, #status, #timer, #clues {
       text-shadow:
         -1px -1px 0 black,
@@ -85,8 +84,9 @@
     <button onclick="showPage('playMenu')">PLAY</button>
     <button onclick="showPage('cluePage')">GET A CLUE</button>
     <button onclick="showPage('howTo')">HOW TO PLAY</button>
-    
-    <button onclick="openDonate(buymeacoffee.com/aldobla1982)">🧋ADOPT A DEV🍰</button>
+
+    <!-- FIXED DONATION BUTTON -->
+    <button onclick="openDonate()">🧋 ADOPT A DEV 🍰</button>
   </div>
 
   <!-- PLAY MENU -->
@@ -128,7 +128,7 @@
 <script src="/static/js/random-background.js"></script>
 
 <script>
-const API = "http://127.0.0.1:8001";
+const API = "https://epic-strategies.onrender.com";
 
 let gameId = null;
 let currentPlayer = "p1";
@@ -227,6 +227,12 @@ function watchAd(){
     document.getElementById("clues").innerText="Clues: "+clues;
   },1000);
 }
+
+/* ✅ DONATION FIX (GLOBAL) */
+function openDonate(){
+  window.open("https://buymeacoffee.com/aldobla1982","_blank");
+}
+
 </script>
 
 </body>
