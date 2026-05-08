@@ -1,198 +1,367 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>EPIC STRATEGIES</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: transparent;
-      color: white;
-      display: flex;
-      justify-content: center;
-    }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    body, h1, h2, h3, p, button, #status, #timer, #clues {
-      text-shadow:
-        -1px -1px 0 black,
-         1px -1px 0 black,
-        -1px  1px 0 black,
-         1px  1px 0 black,
-         0px  0px 6px black;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #d9d9d9;
+  display: flex;
+  justify-content: center;
+}
 
-    .container {
-      width: 100%;
-      max-width: 420px;
-      text-align: center;
-      padding: 20px;
-      background: rgba(0,0,0,0.6);
-      border-radius: 12px;
-    }
+#app {
+  width: 100%;
+  max-width: 480px;
+  padding: 16px;
+  box-sizing: border-box;
+}
 
-    button {
-      width: 100%;
-      padding: 14px;
-      margin: 8px 0;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      cursor: pointer;
-    }
+/* SCREENS */
+.screen {
+  display: none;
+}
 
-    button:hover {
-      background: rgba(0,0,0,0.9);
-    }
+.screen.active {
+  display: block;
+}
 
-    #board {
-      display: grid;
-      grid-template-columns: repeat(30, 14px);
-      grid-template-rows: repeat(30, 14px);
-      gap: 1px;
-      justify-content: center;
-      margin-top: 10px;
-    }
+/* TITLE */
+h1 {
+  text-align: center;
+  font-size: clamp(24px, 6vw, 36px);
+  margin-bottom: 20px;
+}
 
-    .cell {
-      width: 14px;
-      height: 14px;
-      background: #d2a679;
-      cursor: pointer;
-    }
+/* BUTTONS */
+.button {
+  width: 100%;
+  padding: 16px;
+  margin: 10px 0;
+  font-size: clamp(16px, 4vw, 22px);
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(#1e1e1e, #111);
+  color: white;
+  cursor: pointer;
+}
 
-    .cell:hover {
-      outline: 2px solid white;
-    }
+.button:active {
+  transform: scale(0.97);
+}
+</style>
 
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-  </style>
 </head>
 
-<body data-bg-mode="page">
+<body>
 
-<div class="container">
+<style>
+  body {
+    margin: 0;
+    background: #1b1b1b;
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+  }
 
-  <!-- MENU -->
+  #app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  h1 {
+    margin: 5px 0;
+    font-size: 28px;
+  }
+
+  .menu-button {
+    width: 90%;
+    max-width: 320px;
+    padding: 14px;
+    margin: 8px 0;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #3f8f3f;
+    color: white;
+  }
+
+  #boardWrapper {
+    overflow: auto;
+    touch-action: none;
+    border: 2px solid #555;
+    max-width: 100%;
+    max-height: 75vh;
+    background: #7a5a34;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(30, 24px);
+    grid-template-rows: repeat(30, 24px);
+    transform-origin: top left;
+  }
+
+  .cell {
+    width: 24px;
+    height: 24px;
+    background: #d2a679;
+    border: 1px solid rgba(0,0,0,0.15);
+    box-sizing: border-box;
+  }
+
+  .topbar {
+    display: flex;
+    gap: 8px;
+    margin: 6px 0;
+  }
+
+  .zoom-btn {
+    padding: 10px 14px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #444;
+    color: white;
+  }
+
+  #status {
+    margin: 6px 0;
+    font-size: 18px;
+  }
+
+  #donate {
+    position: fixed;
+    bottom: 4px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    opacity: 0.7;
+  }
+
+  #donate a {
+    color: #aaa;
+    text-decoration: none;
+  }
+
+</style>
+
+<div id="app">
+
+  <!-- MAIN MENU -->
   <div id="menu">
-    <h1>EPIC STRATEGIES</h1>
-    <button onclick="showPage('playMenu')">PLAY</button>
-    <button onclick="showPage('cluePage')">GET A CLUE</button>
-    <button onclick="showPage('howTo')">HOW TO PLAY</button>
+    <h1>GOMOKU</h1>
 
-    <!-- FIXED DONATION BUTTON -->
-    <button onclick="openDonate()">🧋 ADOPT A DEV 🍰</button>
+    <button class="menu-button" onclick="showPage('playMenu')">
+      PLAY
+    </button>
+
+    <button class="menu-button" onclick="showPage('cluePage')">
+      GET A CLUE
+    </button>
+
+    <button class="menu-button" onclick="showPage('howTo')">
+      HOW TO PLAY
+    </button>
   </div>
 
   <!-- PLAY MENU -->
   <div id="playMenu" style="display:none;">
-    <h2>Select Mode</h2>
-    <button onclick="startGame(2)">2 Players</button>
-    <button onclick="startGame(3)">3 Players</button>
-    <button onclick="startGame(4)">4 Players</button>
-    <button onclick="showPage('menu')">BACK</button>
+    <h1>Select Mode</h1>
+
+    <button class="menu-button" onclick="startGame(2)">
+      2 Players (Connect 5)
+    </button>
+
+    <button class="menu-button" onclick="startGame(3)">
+      3 Players (Connect 4)
+    </button>
+
+    <button class="menu-button" onclick="startGame(4)">
+      4 Players (Connect 3)
+    </button>
+
+    <button class="menu-button" onclick="showPage('menu')">
+      BACK
+    </button>
   </div>
 
-  <!-- GAME -->
-  <div id="gamePage" style="display:none;">
-    <h2>Game</h2>
-    <div id="status"></div>
-    <div id="board"></div>
-    <button onclick="showPage('menu')">EXIT</button>
+  <!-- GAME PAGE -->
+  <div id="gamePage" style="display:none; width:100%;">
+
+    <div id="status">Waiting...</div>
+
+    <div class="topbar">
+      <button class="zoom-btn" onclick="zoomOut()">-</button>
+      <button class="zoom-btn" onclick="zoomIn()">+</button>
+      <button class="zoom-btn" onclick="showPage('menu')">EXIT</button>
+    </div>
+
+    <div id="boardWrapper">
+      <div id="board"></div>
+    </div>
+
   </div>
 
-  <!-- CLUE -->
+  <!-- CLUE PAGE -->
   <div id="cluePage" style="display:none;">
-    <h2>Clues</h2>
-    <button onclick="watchAd()">WATCH AD</button>
+    <h1>Get Clues</h1>
+
+    <button class="menu-button" onclick="watchAd()">
+      WATCH AD (+2 CLUES)
+    </button>
+
     <div id="clues">Clues: 0</div>
-    <button onclick="showPage('menu')">BACK</button>
+
+    <button class="menu-button" onclick="showPage('menu')">
+      BACK
+    </button>
   </div>
 
   <!-- HOW TO -->
   <div id="howTo" style="display:none;">
-    <h2>How to Play</h2>
+    <h1>How To Play</h1>
+
     <p>2 Players → Connect 5</p>
     <p>3 Players → Connect 4</p>
     <p>4 Players → Connect 3</p>
-    <button onclick="showPage('menu')">BACK</button>
+
+    <p>
+      If a player takes longer than 3 minutes,
+      their turn is skipped.
+    </p>
+
+    <button class="menu-button" onclick="showPage('menu')">
+      BACK
+    </button>
   </div>
 
 </div>
 
-<script src="/static/js/random-background.js"></script>
+<div id="donate">
+  <a href="#">Adopt a Dev</a>
+</div>
 
 <script>
-const API = "https://epic-strategies.onrender.com";
+
+const API = "http://127.0.0.1:8000";
 
 let gameId = null;
 let currentPlayer = "p1";
 let players = [];
+let zoom = 1;
 let clues = 0;
 
-function showPage(page) {
-  ["menu","playMenu","gamePage","cluePage","howTo"].forEach(id => {
-    document.getElementById(id).style.display = "none";
-  });
-  document.getElementById(page).style.display = "block";
+/* PAGE NAV */
+
+function showPage(page){
+  ["menu","playMenu","gamePage","cluePage","howTo"]
+    .forEach(id=>{
+      document.getElementById(id).style.display="none";
+    });
+
+  document.getElementById(page).style.display="block";
 }
 
-function startGame(count) {
+/* ZOOM */
+
+function applyZoom(){
+  document.getElementById("board").style.transform =
+    `scale(${zoom})`;
+}
+
+function zoomIn(){
+  zoom += 0.1;
+  applyZoom();
+}
+
+function zoomOut(){
+  zoom = Math.max(0.5, zoom - 0.1);
+  applyZoom();
+}
+
+/* START GAME */
+
+function startGame(count){
   showPage("gamePage");
   createGame(count);
 }
 
-async function createGame(count) {
+/* CREATE GAME */
+
+async function createGame(count){
+
   const map = {
-    2: ["p1","p2"],
-    3: ["p1","p2","p3"],
-    4: ["p1","p2","p3","p4"]
+    2:["p1","p2"],
+    3:["p1","p2","p3"],
+    4:["p1","p2","p3","p4"]
   };
 
   players = map[count];
   currentPlayer = players[0];
 
-  const res = await fetch(API + "/games", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(players)
+  const res = await fetch(API+"/games",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(players)
   });
 
   const data = await res.json();
+
   gameId = data.game_id;
 
-  document.getElementById("status").innerText = "Turn: " + currentPlayer;
   renderBoard(data.board);
+
+  document.getElementById("status").innerText =
+    "Turn: " + currentPlayer;
 }
 
-function renderBoard(board) {
+/* BOARD */
+
+function renderBoard(board){
+
   const boardDiv = document.getElementById("board");
+
   boardDiv.innerHTML = "";
 
   board.forEach((row,y)=>{
+
     row.forEach((cell,x)=>{
+
       const div = document.createElement("div");
+
       div.className = "cell";
 
       if(cell){
         div.style.background =
-          cell==="p1"?"black":
-          cell==="p2"?"white":
-          cell==="p3"?"blue":"green";
+          cell==="p1" ? "black" :
+          cell==="p2" ? "white" :
+          cell==="p3" ? "blue" :
+          "green";
       }
 
       div.onclick = ()=>makeMove(x,y);
+
       boardDiv.appendChild(div);
+
     });
+
   });
+
 }
 
+/* MOVE */
+
 async function makeMove(x,y){
+
   if(!gameId) return;
 
   const res = await fetch(API+"/move",{
@@ -208,29 +377,37 @@ async function makeMove(x,y){
   if(!res.ok) return;
 
   const data = await res.json();
+
   renderBoard(data.board);
 
   if(data.winner){
-    document.getElementById("status").innerText="Winner: "+data.winner;
-    gameId=null;
+    document.getElementById("status").innerText =
+      "Winner: " + data.winner;
     return;
   }
 
-  currentPlayer=data.next_turn;
-  document.getElementById("status").innerText="Turn: "+currentPlayer;
+  currentPlayer = data.next_turn;
+
+  document.getElementById("status").innerText =
+    "Turn: " + currentPlayer;
+
 }
+
+/* CLUES */
 
 function watchAd(){
-  alert("Ad...");
-  setTimeout(()=>{
-    clues+=2;
-    document.getElementById("clues").innerText="Clues: "+clues;
-  },1000);
-}
 
-/* ✅ DONATION FIX (GLOBAL) */
-function openDonate(){
-  window.open("https://buymeacoffee.com/aldobla1982","_blank");
+  alert("Simulated rewarded ad");
+
+  setTimeout(()=>{
+
+    clues += 2;
+
+    document.getElementById("clues").innerText =
+      "Clues: " + clues;
+
+  },1000);
+
 }
 
 </script>
