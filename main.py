@@ -66,7 +66,7 @@ Base.metadata.create_all(bind=engine)
 # ---------------------------
 @app.get("/")
 def serve_frontend():
-    return FileResponse("index.html")
+    return FileResponse("index_v1_working.html")
 
 
 # ---------------------------
