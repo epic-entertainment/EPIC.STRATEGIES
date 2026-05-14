@@ -1,27 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-
-from sqlalchemy.orm import Session
-from database import Base, engine
-from models import User
-from auth import get_db, hash_password, verify_password, create_token, get_current_user
-
-import uuid
-from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from game_models import find_threat
-
+import uuid
+import random
 
 app = FastAPI()
 
-# Serve static folders
-app.mount("/assets", StaticFiles(directory="assets"), name="assets")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# CORS (allow all for now)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,91 +18,9 @@ app.add_middleware(
 
 BOARD_SIZE = 30
 
-
-# ---------------------------
-# GAME RULES
-# ---------------------------
-def get_connect_rule(num_players):
-    if num_players == 2:
-        return 5
-    elif num_players == 3:
-        return 4
-    elif num_players == 4:
-        return 3
-    elif num_players == 9:
-        return 2
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="Supported player counts: 2, 3, 4, or 9"
-        )
-
-
-def create_board():
-    return [[None for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-
-
 games = {}
 
-Base.metadata.create_all(bind=engine)
 
-
-# ---------------------------
-# ROOT (SERVE FRONTEND)
-# ---------------------------
-@app.get("/")
-def serve_frontend():
-    return FileResponse("epicstrategyfrontend.html")
-
-
-# ---------------------------
-# AUTH
-# ---------------------------
-@app.post("/register")
-def register(username: str, email: str, password: str, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    user = User(
-        username=username,
-        email=email,
-        password_hash=hash_password(password)
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    token = create_token(user.id)
-    return {"token": token}
-
-
-@app.post("/login")
-def login(email: str, password: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-
-    if not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-
-    token = create_token(user.id)
-    return {"token": token}
-
-
-@app.get("/me")
-def read_me(current_user=Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "clue_balance": current_user.clue_balance
-    }
-
-
-# ---------------------------
-# GAME MODELS
-# ---------------------------
 class Move(BaseModel):
     game_id: str
     player: str
@@ -124,135 +28,320 @@ class Move(BaseModel):
     y: int
 
 
-# ---------------------------
-# CREATE GAME
-# ---------------------------
-@app.post("/games")
-def create_game(players: List[str]):
-    if len(players) not in [2, 3, 4, 9]:
-        raise HTTPException(
-            status_code=400,
-            detail="Supported player counts: 2, 3, 4, or 9"
-        )
-
-    game_id = str(uuid.uuid4())
-    board = create_board()
-    connect_n = get_connect_rule(len(players))
-
-    games[game_id] = {
-        "players": players,
-        "board": board,
-        "turn": players[0],
-        "winner": None,
-        "connect_n": connect_n
-    }
-
-    return {
-        "game_id": game_id,
-        "board": board,
-        "connect_n": connect_n
-    }
+def create_board():
+    return [
+        [None for _ in range(BOARD_SIZE)]
+        for _ in range(BOARD_SIZE)
+    ]
 
 
-# ---------------------------
-# WIN CHECK
-# ---------------------------
-def check_winner(board, player, x, y, connect_n):
+def connect_rule(player_count):
+
+    if player_count == 2:
+        return 5
+
+    if player_count == 3:
+        return 4
+
+    return 3
+
+
+def is_cpu(player):
+    return player.startswith("cpu")
+
+
+def check_direction(
+    board,
+    player,
+    x,
+    y,
+    dx,
+    dy
+):
+    count = 1
+
+    nx = x + dx
+    ny = y + dy
+
+    while (
+        0 <= nx < BOARD_SIZE and
+        0 <= ny < BOARD_SIZE and
+        board[ny][nx] == player
+    ):
+        count += 1
+        nx += dx
+        ny += dy
+
+    nx = x - dx
+    ny = y - dy
+
+    while (
+        0 <= nx < BOARD_SIZE and
+        0 <= ny < BOARD_SIZE and
+        board[ny][nx] == player
+    ):
+        count += 1
+        nx -= dx
+        ny -= dy
+
+    return count
+
+
+def check_winner(
+    board,
+    player,
+    x,
+    y,
+    connect_n
+):
+
     directions = [
+
         (1, 0),
         (0, 1),
         (1, 1),
-        (1, -1),
+        (1, -1)
     ]
 
-    size = len(board)
-
     for dx, dy in directions:
-        count = 1
 
-        i = 1
-        while True:
-            nx = x + dx * i
-            ny = y + dy * i
-            if 0 <= nx < size and 0 <= ny < size and board[ny][nx] == player:
-                count += 1
-                i += 1
-            else:
-                break
+        if check_direction(
+            board,
+            player,
+            x,
+            y,
+            dx,
+            dy
+        ) >= connect_n:
 
-        i = 1
-        while True:
-            nx = x - dx * i
-            ny = y - dy * i
-            if 0 <= nx < size and 0 <= ny < size and board[ny][nx] == player:
-                count += 1
-                i += 1
-            else:
-                break
-
-        if count >= connect_n:
             return True
 
     return False
 
 
-# ---------------------------
-# MAKE MOVE
-# ---------------------------
-@app.post("/move")
-def make_move(move: Move):
-    if move.game_id not in games:
-        raise HTTPException(status_code=404, detail="Game not found")
+def get_empty_cells(board):
 
-    game = games[move.game_id]
+    cells = []
 
-    if game["winner"] is not None:
-        raise HTTPException(status_code=400, detail="Game already finished")
+    for y in range(BOARD_SIZE):
+        for x in range(BOARD_SIZE):
 
-    if game["turn"] != move.player:
-        raise HTTPException(status_code=400, detail="Not your turn")
+            if board[y][x] is None:
+                cells.append((x, y))
 
-    if game["board"][move.y][move.x] is not None:
-        raise HTTPException(status_code=400, detail="Cell already occupied")
+    return cells
 
-    # place move
-    game["board"][move.y][move.x] = move.player
 
-    # check win
-    if check_winner(game["board"], move.player, move.x, move.y, game["connect_n"]):
-        game["winner"] = move.player
+def cpu_move(board):
 
-        threat = find_threat(game["board"], game["connect_n"])
+    empty = get_empty_cells(board)
 
-        return {
-            "board": game["board"],
-            "winner": game["winner"],
-            "threat": threat
-        }
+    if not empty:
+        return None
 
-    # detect threat
-    threat = find_threat(game["board"], game["connect_n"])
+    return random.choice(empty)
 
-    # next turn
-    players = game["players"]
-    next_index = (players.index(move.player) + 1) % len(players)
-    game["turn"] = players[next_index]
+
+def next_turn(players, current):
+
+    index = players.index(current)
+
+    return players[
+        (index + 1) % len(players)
+    ]
+
+
+def detect_threat(board, connect_n):
+
+    for y in range(BOARD_SIZE):
+
+        row_count = 0
+
+        for x in range(BOARD_SIZE):
+
+            if board[y][x] is not None:
+                row_count += 1
+
+        if row_count >= connect_n - 1:
+
+            return {
+                "row": y + 1
+            }
+
+    return None
+
+
+def run_cpu_turns(game):
+
+    while (
+        game["winner"] is None and
+        is_cpu(game["turn"])
+    ):
+
+        move = cpu_move(game["board"])
+
+        if move is None:
+            return
+
+        x, y = move
+
+        cpu = game["turn"]
+
+        game["board"][y][x] = cpu
+
+        if check_winner(
+            game["board"],
+            cpu,
+            x,
+            y,
+            game["connect_n"]
+        ):
+
+            game["winner"] = cpu
+
+            return
+
+        game["turn"] = next_turn(
+            game["players"],
+            game["turn"]
+        )
+
+
+@app.get("/")
+def serve_frontend():
+
+    return FileResponse(
+        "epicstrategyfrontend.html"
+    )
+
+
+@app.post("/games")
+def create_game(players: list[str]):
+
+    game_id = str(uuid.uuid4())
+
+    board = create_board()
+
+    connect_n = connect_rule(
+        len(players)
+    )
+
+    game = {
+
+        "id": game_id,
+
+        "board": board,
+
+        "players": players,
+
+        "turn": players[0],
+
+        "winner": None,
+
+        "connect_n": connect_n
+    }
+
+    games[game_id] = game
+
+    run_cpu_turns(game)
+
+    threat = detect_threat(
+        board,
+        connect_n
+    )
 
     return {
-        "board": game["board"],
+
+        "game_id": game_id,
+
+        "board": board,
+
         "next_turn": game["turn"],
+
+        "winner": game["winner"],
+
         "threat": threat
     }
 
 
-# ---------------------------
-# GET GAME
-# ---------------------------
-@app.get("/game/{game_id}")
-def get_game(game_id: str):
-    game = games.get(game_id)
+@app.post("/move")
+def make_move(move: Move):
 
-    if not game:
-        raise HTTPException(status_code=404, detail="Game not found")
+    if move.game_id not in games:
 
-    return game
+        raise HTTPException(
+            status_code=404,
+            detail="Game not found"
+        )
+
+    game = games[move.game_id]
+
+    if game["winner"] is not None:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Game finished"
+        )
+
+    if game["turn"] != move.player:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Not your turn"
+        )
+
+    if (
+        move.x < 0 or
+        move.x >= BOARD_SIZE or
+        move.y < 0 or
+        move.y >= BOARD_SIZE
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Out of bounds"
+        )
+
+    if game["board"][move.y][move.x] is not None:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Occupied"
+        )
+
+    game["board"][move.y][move.x] = move.player
+
+    if check_winner(
+        game["board"],
+        move.player,
+        move.x,
+        move.y,
+        game["connect_n"]
+    ):
+
+        game["winner"] = move.player
+
+    else:
+
+        game["turn"] = next_turn(
+            game["players"],
+            game["turn"]
+        )
+
+        run_cpu_turns(game)
+
+    threat = detect_threat(
+        game["board"],
+        game["connect_n"]
+    )
+
+    return {
+
+        "board": game["board"],
+
+        "next_turn": game["turn"],
+
+        "winner": game["winner"],
+
+        "threat": threat
+    }
