@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 import uuid
 import random
+import time
 
 app = FastAPI()
 
@@ -29,8 +30,11 @@ class Move(BaseModel):
 
 
 def create_board():
+
     return [
+
         [None for _ in range(BOARD_SIZE)]
+
         for _ in range(BOARD_SIZE)
     ]
 
@@ -47,6 +51,7 @@ def connect_rule(player_count):
 
 
 def is_cpu(player):
+
     return player.startswith("cpu")
 
 
@@ -58,6 +63,7 @@ def check_direction(
     dx,
     dy
 ):
+
     count = 1
 
     nx = x + dx
@@ -68,7 +74,9 @@ def check_direction(
         0 <= ny < BOARD_SIZE and
         board[ny][nx] == player
     ):
+
         count += 1
+
         nx += dx
         ny += dy
 
@@ -80,7 +88,9 @@ def check_direction(
         0 <= ny < BOARD_SIZE and
         board[ny][nx] == player
     ):
+
         count += 1
+
         nx -= dx
         ny -= dy
 
@@ -119,29 +129,6 @@ def check_winner(
     return False
 
 
-def get_empty_cells(board):
-
-    cells = []
-
-    for y in range(BOARD_SIZE):
-        for x in range(BOARD_SIZE):
-
-            if board[y][x] is None:
-                cells.append((x, y))
-
-    return cells
-
-
-def cpu_move(board):
-
-    empty = get_empty_cells(board)
-
-    if not empty:
-        return None
-
-    return random.choice(empty)
-
-
 def next_turn(players, current):
 
     index = players.index(current)
@@ -151,18 +138,44 @@ def next_turn(players, current):
     ]
 
 
+def empty_cells(board):
+
+    cells = []
+
+    for y in range(BOARD_SIZE):
+
+        for x in range(BOARD_SIZE):
+
+            if board[y][x] is None:
+
+                cells.append((x, y))
+
+    return cells
+
+
+def cpu_move(board):
+
+    cells = empty_cells(board)
+
+    if not cells:
+        return None
+
+    return random.choice(cells)
+
+
 def detect_threat(board, connect_n):
 
     for y in range(BOARD_SIZE):
 
-        row_count = 0
+        filled = 0
 
         for x in range(BOARD_SIZE):
 
             if board[y][x] is not None:
-                row_count += 1
 
-        if row_count >= connect_n - 1:
+                filled += 1
+
+        if filled >= connect_n - 1:
 
             return {
                 "row": y + 1
@@ -171,22 +184,19 @@ def detect_threat(board, connect_n):
     return None
 
 
-def run_cpu_turns(game):
+def run_cpu_cycle(game):
 
-    while (
-        game["winner"] is None and
-        is_cpu(game["turn"])
-    ):
+    while True:
 
-        cpu = game["turn"]
+        if game["winner"] is not None:
+            return
 
-        thinking_time = random.uniform(
-            1.0,
-            10.0
-        )
+        current = game["turn"]
 
-        import time
-        time.sleep(thinking_time)
+        if not is_cpu(current):
+            return
+
+        time.sleep(1)
 
         move = cpu_move(game["board"])
 
@@ -195,23 +205,23 @@ def run_cpu_turns(game):
 
         x, y = move
 
-        game["board"][y][x] = cpu
+        game["board"][y][x] = current
 
         if check_winner(
             game["board"],
-            cpu,
+            current,
             x,
             y,
             game["connect_n"]
         ):
 
-            game["winner"] = cpu
+            game["winner"] = current
 
             return
 
         game["turn"] = next_turn(
             game["players"],
-            game["turn"]
+            current
         )
 
 
@@ -251,18 +261,16 @@ def create_game(players: list[str]):
 
     games[game_id] = game
 
-    run_cpu_turns(game)
-
     threat = detect_threat(
-        board,
-        connect_n
+        game["board"],
+        game["connect_n"]
     )
 
     return {
 
         "game_id": game_id,
 
-        "board": board,
+        "board": game["board"],
 
         "next_turn": game["turn"],
 
@@ -333,10 +341,10 @@ def make_move(move: Move):
 
         game["turn"] = next_turn(
             game["players"],
-            game["turn"]
+            move.player
         )
 
-        run_cpu_turns(game)
+        run_cpu_cycle(game)
 
     threat = detect_threat(
         game["board"],
