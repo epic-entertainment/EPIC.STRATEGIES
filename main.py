@@ -178,14 +178,22 @@ def run_cpu_turns(game):
         is_cpu(game["turn"])
     ):
 
+        cpu = game["turn"]
+
+        thinking_time = random.uniform(
+            1.0,
+            10.0
+        )
+
+        import time
+        time.sleep(thinking_time)
+
         move = cpu_move(game["board"])
 
         if move is None:
             return
 
         x, y = move
-
-        cpu = game["turn"]
 
         game["board"][y][x] = cpu
 
