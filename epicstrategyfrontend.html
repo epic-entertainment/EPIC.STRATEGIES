@@ -126,8 +126,6 @@ body,h1,h2,h3,p,button,#status,#clueText{
 
   width:max-content;
   height:max-content;
-
-  transform-origin:top left;
 }
 
 .cell{
@@ -180,8 +178,6 @@ body,h1,h2,h3,p,button,#status,#clueText{
 
 <div id="app">
 
-  <!-- MENU -->
-
   <div id="menu" class="page">
 
     <h1>EPIC STRATEGIES</h1>
@@ -196,7 +192,7 @@ body,h1,h2,h3,p,button,#status,#clueText{
     <button class="menu-button"
       onclick="showPage('cluePage')">
 
-      GET A CLUE
+      GET CLUES
 
     </button>
 
@@ -209,32 +205,30 @@ body,h1,h2,h3,p,button,#status,#clueText{
 
   </div>
 
-  <!-- PLAY MENU -->
-
   <div id="playMenu"
        class="page"
        style="display:none;">
 
-    <h1>Select Mode</h1>
+    <h1>SELECT MODE</h1>
 
     <button class="menu-button"
       onclick="startGame(2)">
 
-      2 Players
+      1 VS CPU
 
     </button>
 
     <button class="menu-button"
       onclick="startGame(3)">
 
-      3 Players
+      1 VS 2 CPU
 
     </button>
 
     <button class="menu-button"
       onclick="startGame(4)">
 
-      4 Players
+      1 VS 3 CPU
 
     </button>
 
@@ -247,8 +241,6 @@ body,h1,h2,h3,p,button,#status,#clueText{
 
   </div>
 
-  <!-- GAME -->
-
   <div id="gamePage">
 
     <div id="status">
@@ -257,10 +249,12 @@ body,h1,h2,h3,p,button,#status,#clueText{
 
     <div id="topBar">
 
-      <button class="small-btn"
-        onclick="useClue()">
+      <button id="clueButton"
+        class="small-btn"
+        onclick="useClue()"
+        disabled>
 
-        CLUE
+        NO CLUE
 
       </button>
 
@@ -280,8 +274,6 @@ body,h1,h2,h3,p,button,#status,#clueText{
     <div id="clueText"></div>
 
   </div>
-
-  <!-- CLUE PAGE -->
 
   <div id="cluePage"
        class="page"
@@ -313,17 +305,19 @@ body,h1,h2,h3,p,button,#status,#clueText{
 
   </div>
 
-  <!-- HOW TO -->
-
   <div id="howTo"
        class="page"
        style="display:none;">
 
     <h1>HOW TO PLAY</h1>
 
-    <p>2 Players → Connect 5</p>
-    <p>3 Players → Connect 4</p>
-    <p>4 Players → Connect 3</p>
+    <p>
+      Use clues only when danger appears.
+    </p>
+
+    <p>
+      Drag board with finger.
+    </p>
 
     <button class="menu-button"
       onclick="showPage('menu')">
@@ -351,9 +345,9 @@ let gameId = null;
 
 let currentPlayer = "p1";
 
-let players = [];
-
 let clues = 0;
+
+let currentThreat = null;
 
 let previewCell = null;
 
@@ -428,27 +422,38 @@ function showPage(page){
   randomizeTheme();
 }
 
-function startGame(count){
+async function startGame(mode){
 
   showPage("gamePage");
 
-  createGame(count);
-}
+  let players = [];
 
-async function createGame(count){
+  if(mode === 2){
 
-  const map = {
+    players = [
+      "p1",
+      "cpu2"
+    ];
+  }
 
-    2:["p1","p2"],
+  if(mode === 3){
 
-    3:["p1","p2","p3"],
+    players = [
+      "p1",
+      "cpu2",
+      "cpu3"
+    ];
+  }
 
-    4:["p1","p2","p3","p4"]
-  };
+  if(mode === 4){
 
-  players = map[count];
-
-  currentPlayer = players[0];
+    players = [
+      "p1",
+      "cpu2",
+      "cpu3",
+      "cpu4"
+    ];
+  }
 
   const res =
     await fetch(API+"/games",{
@@ -466,7 +471,12 @@ async function createGame(count){
 
   gameId = data.game_id;
 
+  currentPlayer =
+    data.next_turn;
+
   renderBoard(data.board);
+
+  updateThreat(data.threat);
 
   document.getElementById("status")
     .innerText =
@@ -495,9 +505,9 @@ function renderBoard(board){
 
           cell==="p1" ? "black" :
 
-          cell==="p2" ? "white" :
+          cell==="cpu2" ? "white" :
 
-          cell==="p3" ? "blue" :
+          cell==="cpu3" ? "blue" :
 
           "green";
       }
@@ -541,6 +551,31 @@ function previewMove(div){
   );
 }
 
+function updateThreat(threat){
+
+  currentThreat = threat;
+
+  const btn =
+    document.getElementById(
+      "clueButton"
+    );
+
+  if(threat){
+
+    btn.disabled = false;
+
+    btn.innerText =
+      "CLUE READY";
+
+  } else {
+
+    btn.disabled = true;
+
+    btn.innerText =
+      "NO CLUE";
+  }
+}
+
 async function makeMove(x,y){
 
   if(!gameId) return;
@@ -558,7 +593,7 @@ async function makeMove(x,y){
 
       game_id:gameId,
 
-      player:currentPlayer,
+      player:"p1",
 
       x,y
     })
@@ -566,9 +601,12 @@ async function makeMove(x,y){
 
   if(!res.ok) return;
 
-  const data = await res.json();
+  const data =
+    await res.json();
 
   renderBoard(data.board);
+
+  updateThreat(data.threat);
 
   if(data.winner){
 
@@ -604,19 +642,25 @@ function useClue(){
     return;
   }
 
+  if(!currentThreat){
+
+    document.getElementById("clueText")
+      .innerText =
+      "No threat detected.";
+
+    return;
+  }
+
   clues--;
 
   document.getElementById("clues")
     .innerText =
       "Clues: " + clues;
 
-  const row =
-    Math.floor(Math.random()*30)+1;
-
   document.getElementById("clueText")
     .innerText =
-      "Potential winning move near row "
-      + row;
+      "Danger near row "
+      + currentThreat.row;
 }
 
 function watchAd(){
