@@ -17,7 +17,6 @@ app.add_middleware(
 )
 
 BOARD_SIZE = 30
-
 games = {}
 
 
@@ -29,10 +28,7 @@ class Move(BaseModel):
 
 
 def create_board():
-    return [
-        [None for _ in range(BOARD_SIZE)]
-        for _ in range(BOARD_SIZE)
-    ]
+    return [[None for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 
 
 def connect_rule(player_count):
@@ -61,15 +57,6 @@ def empty_cells(board):
                 cells.append((x, y))
 
     return cells
-
-
-def cpu_move(board):
-    cells = empty_cells(board)
-
-    if not cells:
-        return None
-
-    return random.choice(cells)
 
 
 def check_direction(board, player, x, y, dx, dy):
@@ -117,11 +104,80 @@ def check_winner(board, player, x, y, connect_n):
     return False
 
 
+def winning_move(board, player, connect_n):
+    for x, y in empty_cells(board):
+        board[y][x] = player
+
+        if check_winner(board, player, x, y, connect_n):
+            board[y][x] = None
+            return (x, y)
+
+        board[y][x] = None
+
+    return None
+
+
+def score_position(board, player, x, y):
+    score = 0
+
+    # Prefer cluster zones within 2 squares.
+    for yy in range(max(0, y - 2), min(BOARD_SIZE, y + 3)):
+        for xx in range(max(0, x - 2), min(BOARD_SIZE, x + 3)):
+            cell = board[yy][xx]
+
+            if cell is None:
+                continue
+
+            distance = max(abs(xx - x), abs(yy - y))
+            weight = max(1, 3 - distance)
+
+            if cell == player:
+                score += 5 * weight
+            else:
+                score += 3 * weight
+
+    # Light center preference if board is empty/open.
+    center = BOARD_SIZE // 2
+    score += max(0, 20 - abs(x - center) - abs(y - center))
+
+    return score
+
+
+def cpu_move(board, player, players, connect_n):
+    # 1. Win immediately if possible.
+    move = winning_move(board, player, connect_n)
+
+    if move:
+        return move
+
+    # 2. Block any opponent who can win immediately.
+    for enemy in players:
+        if enemy == player:
+            continue
+
+        move = winning_move(board, enemy, connect_n)
+
+        if move:
+            return move
+
+    # 3. Otherwise, cluster near existing action.
+    best_move = None
+    best_score = -1
+
+    for x, y in empty_cells(board):
+        score = score_position(board, player, x, y)
+
+        if score > best_score:
+            best_score = score
+            best_move = (x, y)
+
+    return best_move
+
+
 def detect_threat(board, connect_n):
-    # Simple MVP clue:
-    # returns a row where a player may be building toward a win.
+    # Clue MVP: find a row where any player has connect_n - 1 pieces.
     for y in range(BOARD_SIZE):
-        row_counts = {}
+        counts = {}
 
         for x in range(BOARD_SIZE):
             player = board[y][x]
@@ -129,9 +185,9 @@ def detect_threat(board, connect_n):
             if player is None:
                 continue
 
-            row_counts[player] = row_counts.get(player, 0) + 1
+            counts[player] = counts.get(player, 0) + 1
 
-            if row_counts[player] >= connect_n - 1:
+            if counts[player] >= connect_n - 1:
                 return {
                     "row": y + 1,
                     "player": player
@@ -143,13 +199,15 @@ def detect_threat(board, connect_n):
 def run_cpu_cycle(game):
     cpu_moves = []
 
-    while (
-        game["winner"] is None and
-        is_cpu(game["turn"])
-    ):
+    while game["winner"] is None and is_cpu(game["turn"]):
         current = game["turn"]
 
-        move = cpu_move(game["board"])
+        move = cpu_move(
+            game["board"],
+            current,
+            game["players"],
+            game["connect_n"]
+        )
 
         if move is None:
             return cpu_moves
@@ -174,10 +232,7 @@ def run_cpu_cycle(game):
             game["winner"] = current
             return cpu_moves
 
-        game["turn"] = next_turn(
-            game["players"],
-            current
-        )
+        game["turn"] = next_turn(game["players"], current)
 
     return cpu_moves
 
@@ -190,16 +245,10 @@ def serve_frontend():
 @app.post("/games")
 def create_game(players: list[str]):
     if len(players) not in [2, 3, 4]:
-        raise HTTPException(
-            status_code=400,
-            detail="Supported player counts: 2, 3, or 4"
-        )
+        raise HTTPException(status_code=400, detail="Supported: 2, 3, 4")
 
     if players[0] != "p1":
-        raise HTTPException(
-            status_code=400,
-            detail="Player 1 must be p1"
-        )
+        raise HTTPException(status_code=400, detail="First player must be p1")
 
     game_id = str(uuid.uuid4())
 
@@ -227,49 +276,26 @@ def create_game(players: list[str]):
 @app.post("/move")
 def make_move(move: Move):
     if move.game_id not in games:
-        raise HTTPException(
-            status_code=404,
-            detail="Game not found"
-        )
+        raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[move.game_id]
 
     if game["winner"] is not None:
-        raise HTTPException(
-            status_code=400,
-            detail="Game finished"
-        )
+        raise HTTPException(status_code=400, detail="Game finished")
 
     if move.player != "p1":
-        raise HTTPException(
-            status_code=400,
-            detail="Only p1 is human in this mode"
-        )
+        raise HTTPException(status_code=400, detail="Only p1 is human")
 
     if game["turn"] != "p1":
-        raise HTTPException(
-            status_code=400,
-            detail="Wait for CPU turns"
-        )
+        raise HTTPException(status_code=400, detail="Wait for CPU turns")
 
-    if (
-        move.x < 0 or
-        move.x >= BOARD_SIZE or
-        move.y < 0 or
-        move.y >= BOARD_SIZE
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Out of bounds"
-        )
+    if not (0 <= move.x < BOARD_SIZE and 0 <= move.y < BOARD_SIZE):
+        raise HTTPException(status_code=400, detail="Out of bounds")
 
     if game["board"][move.y][move.x] is not None:
-        raise HTTPException(
-            status_code=400,
-            detail="Occupied"
-        )
+        raise HTTPException(status_code=400, detail="Occupied")
 
-    # Human p1 move happens immediately.
+    # Human p1 move is accepted immediately.
     game["board"][move.y][move.x] = "p1"
 
     if check_winner(
@@ -282,20 +308,11 @@ def make_move(move: Move):
         game["winner"] = "p1"
         cpu_moves = []
     else:
-        # Advance from p1 to cpu2/cpu3/cpu4.
-        game["turn"] = next_turn(
-            game["players"],
-            "p1"
-        )
-
-        # Backend computes all CPU moves instantly.
-        # Frontend animates them with 2-second fake thinking delays.
+        # CPU cycle after p1: cpu2 → cpu3 → cpu4 → back to p1.
+        game["turn"] = next_turn(game["players"], "p1")
         cpu_moves = run_cpu_cycle(game)
 
-    threat = detect_threat(
-        game["board"],
-        game["connect_n"]
-    )
+    threat = detect_threat(game["board"], game["connect_n"])
 
     return {
         "board": game["board"],
@@ -309,23 +326,15 @@ def make_move(move: Move):
 @app.get("/game/{game_id}")
 def get_game(game_id: str):
     if game_id not in games:
-        raise HTTPException(
-            status_code=404,
-            detail="Game not found"
-        )
+        raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[game_id]
-
-    threat = detect_threat(
-        game["board"],
-        game["connect_n"]
-    )
 
     return {
         "board": game["board"],
         "next_turn": game["turn"],
         "winner": game["winner"],
-        "threat": threat,
+        "threat": detect_threat(game["board"], game["connect_n"]),
         "players": game["players"],
         "connect_n": game["connect_n"]
     }

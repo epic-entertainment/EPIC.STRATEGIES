@@ -2,11 +2,13 @@
 <html>
 <head>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 <title>EPIC STRATEGIES</title>
 
 <style>
+
 body{
   margin:0;
   overflow:hidden;
@@ -15,6 +17,7 @@ body{
 }
 
 body,h1,h2,h3,p,button,#status,#clueText,#clues{
+
   text-shadow:
     -1px -1px 0 black,
      1px -1px 0 black,
@@ -24,12 +27,16 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
 }
 
 #app{
+
   width:100vw;
   height:100vh;
+
   display:flex;
   flex-direction:column;
   align-items:center;
+
   box-sizing:border-box;
+
   padding:10px;
 }
 
@@ -39,65 +46,100 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
 }
 
 .menu-button{
+
   width:90%;
   max-width:320px;
+
   padding:16px;
+
   margin:8px 0;
+
   font-size:18px;
+
   border:none;
   border-radius:12px;
+
   color:white;
 }
 
 #gamePage{
+
   display:none;
+
   width:100%;
   height:100%;
 }
 
 #status{
+
   margin:8px 0;
+
   font-size:20px;
 }
 
 #topBar{
+
   display:flex;
+
   justify-content:center;
+
   gap:8px;
+
   margin-bottom:8px;
 }
 
 .small-btn{
+
   padding:10px 14px;
+
   border:none;
   border-radius:10px;
+
   color:white;
+
   font-size:16px;
 }
 
 #boardWrapper{
+
   width:100%;
+
   height:75vh;
+
   overflow:auto;
+
   border:2px solid rgba(255,255,255,0.2);
+
   touch-action:auto;
+
   background:rgba(0,0,0,0.15);
+
   -webkit-overflow-scrolling:touch;
 }
 
 #board{
+
   display:grid;
-  grid-template-columns:repeat(30,34px);
-  grid-template-rows:repeat(30,34px);
+
+  grid-template-columns:
+    repeat(30,34px);
+
+  grid-template-rows:
+    repeat(30,34px);
+
   width:max-content;
   height:max-content;
 }
 
 .cell{
+
   width:34px;
   height:34px;
+
   background:#d2a679;
+
   border:1px solid rgba(0,0,0,0.15);
+
   box-sizing:border-box;
 }
 
@@ -105,29 +147,36 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
   outline:3px solid red;
 }
 
-.cpu-thinking{
-  opacity:0.65;
-}
-
 #clueText{
+
   margin-top:10px;
+
   font-size:18px;
 }
 
 #donate{
+
   position:fixed;
+
   bottom:4px;
   left:0;
+
   width:100%;
+
   text-align:center;
+
   font-size:10px;
+
   opacity:0.7;
 }
 
 #donate a{
+
   color:white;
+
   text-decoration:none;
 }
+
 </style>
 
 </head>
@@ -137,28 +186,92 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
 <div id="app">
 
   <div id="menu" class="page">
+
     <h1>EPIC STRATEGIES</h1>
 
-    <button class="menu-button" onclick="showPage('playMenu')">PLAY</button>
-    <button class="menu-button" onclick="showPage('cluePage')">GET CLUES</button>
-    <button class="menu-button" onclick="showPage('howTo')">HOW TO PLAY</button>
+    <button class="menu-button"
+      onclick="showPage('playMenu')">
+
+      PLAY
+
+    </button>
+
+    <button class="menu-button"
+      onclick="showPage('cluePage')">
+
+      GET CLUES
+
+    </button>
+
+    <button class="menu-button"
+      onclick="showPage('howTo')">
+
+      HOW TO PLAY
+
+    </button>
+
   </div>
 
-  <div id="playMenu" class="page" style="display:none;">
+  <div id="playMenu"
+       class="page"
+       style="display:none;">
+
     <h1>SELECT MODE</h1>
 
-    <button class="menu-button" onclick="startGame(2)">1 VS CPU — CONNECT 5</button>
-    <button class="menu-button" onclick="startGame(3)">1 VS 2 CPU — CONNECT 4</button>
-    <button class="menu-button" onclick="startGame(4)">1 VS 3 CPU — CONNECT 3</button>
-    <button class="menu-button" onclick="showPage('menu')">BACK</button>
+    <button class="menu-button"
+      onclick="startGame(2)">
+
+      CONNECT 5
+
+    </button>
+
+    <button class="menu-button"
+      onclick="startGame(3)">
+
+      CONNECT 4
+
+    </button>
+
+    <button class="menu-button"
+      onclick="startGame(4)">
+
+      CONNECT 3
+
+    </button>
+
+    <button class="menu-button"
+      onclick="showPage('menu')">
+
+      BACK
+
+    </button>
+
   </div>
 
   <div id="gamePage">
-    <div id="status">Waiting...</div>
+
+    <div id="status">
+      Waiting...
+    </div>
 
     <div id="topBar">
-      <button id="clueButton" class="small-btn" onclick="useClue()" disabled>NO CLUE</button>
-      <button class="small-btn" onclick="showPage('menu')">EXIT</button>
+
+      <button id="clueButton"
+        class="small-btn"
+        onclick="useClue()"
+        disabled>
+
+        NO CLUE
+
+      </button>
+
+      <button class="small-btn"
+        onclick="showPage('menu')">
+
+        EXIT
+
+      </button>
+
     </div>
 
     <div id="boardWrapper">
@@ -166,50 +279,93 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
     </div>
 
     <div id="clueText"></div>
+
   </div>
 
-  <div id="cluePage" class="page" style="display:none;">
+  <div id="cluePage"
+       class="page"
+       style="display:none;">
+
     <h1>CLUES</h1>
 
-    <p>Watch videos to gain clues.</p>
+    <p>
+      Watch videos to gain clues.
+    </p>
 
-    <button class="menu-button" onclick="watchAd()">WATCH VIDEO (+2 CLUES)</button>
+    <button class="menu-button"
+      onclick="watchAd()">
 
-    <div id="clues">Clues: 0</div>
+      WATCH VIDEO (+2 CLUES)
 
-    <button class="menu-button" onclick="showPage('menu')">BACK</button>
+    </button>
+
+    <div id="clues">
+      Clues: 0
+    </div>
+
+    <button class="menu-button"
+      onclick="showPage('menu')">
+
+      BACK
+
+    </button>
+
   </div>
 
-  <div id="howTo" class="page" style="display:none;">
+  <div id="howTo"
+       class="page"
+       style="display:none;">
+
     <h1>HOW TO PLAY</h1>
 
-    <p>Player 1 moves instantly.</p>
-    <p>CPU players reveal their moves one at a time.</p>
-    <p>Use clues only when danger appears.</p>
-    <p>Drag the board with your finger.</p>
+    <p>
+      Human moves are instant.
+    </p>
 
-    <button class="menu-button" onclick="showPage('menu')">BACK</button>
+    <p>
+      CPU turns reveal one by one.
+    </p>
+
+    <p>
+      Drag board with finger.
+    </p>
+
+    <button class="menu-button"
+      onclick="showPage('menu')">
+
+      BACK
+
+    </button>
+
   </div>
 
 </div>
 
 <div id="donate">
-  <a href="#">adopt a dev</a>
+  <a href="#">
+    adopt a dev
+  </a>
 </div>
 
 <script>
 
-const API = "https://epic-strategies.onrender.com";
+const API =
+"https://epic-strategies.onrender.com";
 
 let gameId = null;
-let currentPlayer = "p1";
+
 let clues = 0;
+
 let currentThreat = null;
+
 let previewCell = null;
+
 let boardState = null;
+
 let locked = false;
 
 const palette = [
+
   "#1f2937",
   "#3b0764",
   "#0f766e",
@@ -220,6 +376,7 @@ const palette = [
 ];
 
 const buttonPalette = [
+
   "#16a34a",
   "#2563eb",
   "#dc2626",
@@ -229,86 +386,149 @@ const buttonPalette = [
 ];
 
 function randomizeTheme(){
-  document.body.style.background =
-    palette[Math.floor(Math.random() * palette.length)];
 
-  document.querySelectorAll(".menu-button,.small-btn").forEach(btn=>{
-    btn.style.background =
-      buttonPalette[Math.floor(Math.random() * buttonPalette.length)];
-  });
+  document.body.style.background =
+
+    palette[
+      Math.floor(
+        Math.random() * palette.length
+      )
+    ];
+
+  document
+    .querySelectorAll(
+      ".menu-button,.small-btn"
+    )
+    .forEach(btn=>{
+
+      btn.style.background =
+
+        buttonPalette[
+          Math.floor(
+            Math.random()
+            *
+            buttonPalette.length
+          )
+        ];
+    });
 }
 
 function showPage(page){
-  ["menu","playMenu","gamePage","cluePage","howTo"].forEach(id=>{
-    document.getElementById(id).style.display = "none";
+
+  [
+    "menu",
+    "playMenu",
+    "gamePage",
+    "cluePage",
+    "howTo"
+  ].forEach(id=>{
+
+    document.getElementById(id)
+      .style.display = "none";
   });
 
-  document.getElementById(page).style.display = "block";
+  document.getElementById(page)
+    .style.display = "block";
+
   randomizeTheme();
 }
 
 async function startGame(mode){
+
   showPage("gamePage");
+
   locked = false;
 
   let players = [];
 
   if(mode === 2){
-    players = ["p1","cpu2"];
+
+    players = [
+      "p1",
+      "cpu2"
+    ];
   }
 
   if(mode === 3){
-    players = ["p1","cpu2","cpu3"];
+
+    players = [
+      "p1",
+      "cpu2",
+      "cpu3"
+    ];
   }
 
   if(mode === 4){
-    players = ["p1","cpu2","cpu3","cpu4"];
+
+    players = [
+      "p1",
+      "cpu2",
+      "cpu3",
+      "cpu4"
+    ];
   }
 
-  document.getElementById("status").innerText = "Starting game...";
+  const res =
+    await fetch(
+      API + "/games",
+      {
+        method:"POST",
 
-  const res = await fetch(API + "/games", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(players)
-  });
+        headers:{
+          "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify(players)
+      }
+    );
 
   const data = await res.json();
 
   gameId = data.game_id;
-  currentPlayer = data.next_turn || "p1";
+
   boardState = data.board;
 
   renderBoard(boardState);
+
   updateThreat(data.threat);
 
-  document.getElementById("status").innerText = "Turn: " + currentPlayer;
+  document.getElementById("status")
+    .innerText =
+    "Turn: PLAYER 1";
 }
 
 function renderBoard(board){
+
   boardState = board;
 
-  const boardDiv = document.getElementById("board");
+  const boardDiv =
+    document.getElementById("board");
+
   boardDiv.innerHTML = "";
 
   board.forEach((row,y)=>{
+
     row.forEach((cell,x)=>{
-      const div = document.createElement("div");
+
+      const div =
+        document.createElement("div");
+
       div.className = "cell";
 
       paintCell(div, cell);
 
-      div.addEventListener("touchstart", ()=>{
-        previewMove(div);
-      });
+      div.addEventListener(
+        "touchstart",
+        ()=>previewMove(div)
+      );
 
-      div.addEventListener("touchend", ()=>{
-        makeMove(x,y);
-      });
+      div.addEventListener(
+        "touchend",
+        ()=>makeMove(x,y)
+      );
 
-      div.onclick = ()=>{
-        makeMove(x,y);
-      };
+      div.onclick =
+        ()=>makeMove(x,y);
 
       boardDiv.appendChild(div);
     });
@@ -316,150 +536,246 @@ function renderBoard(board){
 }
 
 function paintCell(div, cell){
+
   if(!cell){
-    div.style.background = "#d2a679";
+
+    div.style.background =
+      "#d2a679";
+
     return;
   }
 
   div.style.background =
-    cell === "p1" ? "black" :
-    cell === "cpu2" ? "white" :
-    cell === "cpu3" ? "blue" :
-    "green";
+
+    cell === "p1"
+      ? "black"
+
+    : cell === "cpu2"
+      ? "white"
+
+    : cell === "cpu3"
+      ? "blue"
+
+    : "green";
 }
 
 function previewMove(div){
+
   if(locked) return;
 
   if(previewCell){
-    previewCell.classList.remove("preview");
+
+    previewCell.classList.remove(
+      "preview"
+    );
   }
 
   previewCell = div;
-  previewCell.classList.add("preview");
+
+  previewCell.classList.add(
+    "preview"
+  );
 }
 
 function updateThreat(threat){
+
   currentThreat = threat;
 
-  const btn = document.getElementById("clueButton");
+  const btn =
+    document.getElementById(
+      "clueButton"
+    );
 
   if(threat){
+
     btn.disabled = false;
-    btn.innerText = "CLUE READY";
+
+    btn.innerText =
+      "CLUE READY";
+
   } else {
+
     btn.disabled = true;
-    btn.innerText = "NO CLUE";
+
+    btn.innerText =
+      "NO CLUE";
   }
-}
-
-async function makeMove(x,y){
-  if(!gameId || locked) return;
-
-  locked = true;
-
-  const res = await fetch(API + "/move", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      game_id:gameId,
-      player:"p1",
-      x,
-      y
-    })
-  });
-
-  if(!res.ok){
-    locked = false;
-    return;
-  }
-
-  const data = await res.json();
-
-  if(previewCell){
-    previewCell.classList.remove("preview");
-    previewCell = null;
-  }
-
-  await animateTurnResponse(data);
-
-  locked = false;
 }
 
 function sleep(ms){
-  return new Promise(resolve=>setTimeout(resolve, ms));
+
+  return new Promise(resolve=>
+    setTimeout(resolve, ms)
+  );
 }
 
-async function animateTurnResponse(data){
-  const finalBoard = data.board;
-  const cpuMoves = data.cpu_moves || [];
+async function makeMove(x,y){
 
-  if(cpuMoves.length === 0){
-    renderBoard(finalBoard);
-  } else {
-    for(const move of cpuMoves){
-      document.getElementById("status").innerText =
-        move.player + " thinking...";
+  if(!gameId || locked) return;
 
-      await sleep(2000);
+  if(boardState[y][x] !== null)
+    return;
 
-      boardState[move.y][move.x] = move.player;
-      renderBoard(boardState);
-    }
+  locked = true;
 
-    renderBoard(finalBoard);
+  /*
+    PLAYER 1 APPEARS
+    INSTANTLY
+  */
+
+  boardState[y][x] = "p1";
+
+  renderBoard(boardState);
+
+  document.getElementById("status")
+    .innerText =
+    "CPU THINKING...";
+
+  const res =
+    await fetch(
+      API + "/move",
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+          game_id:gameId,
+
+          player:"p1",
+
+          x,
+          y
+        })
+      }
+    );
+
+  if(!res.ok){
+
+    locked = false;
+
+    return;
   }
+
+  const data =
+    await res.json();
+
+  /*
+    RESET TO HUMAN MOVE
+    STATE
+  */
+
+  let animatedBoard =
+    JSON.parse(
+      JSON.stringify(boardState)
+    );
+
+  /*
+    CPU MOVES REVEAL
+    ONE BY ONE
+  */
+
+  for(const move of data.cpu_moves){
+
+    document.getElementById("status")
+      .innerText =
+      move.player +
+      " THINKING...";
+
+    await sleep(2000);
+
+    animatedBoard[
+      move.y
+    ][
+      move.x
+    ] = move.player;
+
+    renderBoard(animatedBoard);
+  }
+
+  boardState = data.board;
+
+  renderBoard(boardState);
 
   updateThreat(data.threat);
 
   if(data.winner){
-    document.getElementById("status").innerText =
+
+    document.getElementById("status")
+      .innerText =
       "WINNER: " + data.winner;
 
-    alert("Winner: " + data.winner);
+    alert(
+      "Winner: " + data.winner
+    );
 
     gameId = null;
+
+    locked = false;
+
     return;
   }
 
-  currentPlayer = data.next_turn || "p1";
+  document.getElementById("status")
+    .innerText =
+    "Turn: PLAYER 1";
 
-  document.getElementById("status").innerText =
-    "Turn: " + currentPlayer;
+  locked = false;
 }
 
 function useClue(){
+
   if(clues <= 0){
-    document.getElementById("clueText").innerText =
+
+    document.getElementById("clueText")
+      .innerText =
       "No clues available.";
+
     return;
   }
 
   if(!currentThreat){
-    document.getElementById("clueText").innerText =
+
+    document.getElementById("clueText")
+      .innerText =
       "No threat detected.";
+
     return;
   }
 
   clues--;
 
-  document.getElementById("clues").innerText =
+  document.getElementById("clues")
+    .innerText =
     "Clues: " + clues;
 
-  document.getElementById("clueText").innerText =
-    "Danger near row " + currentThreat.row;
+  document.getElementById("clueText")
+    .innerText =
+    "Danger near row "
+    + currentThreat.row;
 }
 
 function watchAd(){
-  alert("Rewarded video placeholder");
+
+  alert(
+    "Rewarded video placeholder"
+  );
 
   setTimeout(()=>{
+
     clues += 2;
 
-    document.getElementById("clues").innerText =
+    document.getElementById("clues")
+      .innerText =
       "Clues: " + clues;
+
   },1000);
 }
+
+randomizeTheme();
 
 showPage("menu");
 
