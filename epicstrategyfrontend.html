@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>EPIC STRATEGIES</title>
 
 <style>
-
 body{
   margin:0;
   overflow:hidden;
@@ -16,27 +12,29 @@ body{
   color:white;
 }
 
-body,h1,h2,h3,p,button,#status,#clueText,#clues{
+body,h1,h2,h3,p,button,#status,#clueText,#clues,#loadingScreen{
+  text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black,0 0 6px black;
+}
 
-  text-shadow:
-    -1px -1px 0 black,
-     1px -1px 0 black,
-    -1px  1px 0 black,
-     1px  1px 0 black,
-     0px 0px 6px black;
+#loadingScreen{
+  position:fixed;
+  inset:0;
+  background:#1f2937;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:28px;
+  z-index:9999;
 }
 
 #app{
-
   width:100vw;
   height:100vh;
-
   display:flex;
   flex-direction:column;
   align-items:center;
-
   box-sizing:border-box;
-
   padding:10px;
 }
 
@@ -46,100 +44,78 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
 }
 
 .menu-button{
-
   width:90%;
   max-width:320px;
-
   padding:16px;
-
   margin:8px 0;
-
   font-size:18px;
-
   border:none;
   border-radius:12px;
-
   color:white;
 }
 
 #gamePage{
-
   display:none;
-
   width:100%;
   height:100%;
 }
 
 #status{
-
   margin:8px 0;
-
   font-size:20px;
 }
 
 #topBar{
-
   display:flex;
-
   justify-content:center;
-
   gap:8px;
-
   margin-bottom:8px;
+  flex-wrap:wrap;
 }
 
 .small-btn{
-
   padding:10px 14px;
-
   border:none;
   border-radius:10px;
-
   color:white;
-
-  font-size:16px;
+  font-size:15px;
 }
 
 #boardWrapper{
-
   width:100%;
-
-  height:75vh;
-
+  height:72vh;
   overflow:auto;
-
-  border:2px solid rgba(255,255,255,0.2);
-
+  border:2px solid rgba(255,255,255,0.25);
   touch-action:auto;
-
   background:rgba(0,0,0,0.15);
-
   -webkit-overflow-scrolling:touch;
 }
 
 #board{
-
   display:grid;
-
-  grid-template-columns:
-    repeat(30,34px);
-
-  grid-template-rows:
-    repeat(30,34px);
-
+  grid-template-columns:32px repeat(30,34px);
+  grid-template-rows:32px repeat(30,34px);
   width:max-content;
   height:max-content;
 }
 
-.cell{
+.label{
+  width:32px;
+  height:32px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:12px;
+  background:rgba(0,0,0,0.5);
+  color:white;
+  box-sizing:border-box;
+}
 
+.cell{
   width:34px;
   height:34px;
-
   background:#d2a679;
-
   border:1px solid rgba(0,0,0,0.15);
-
   box-sizing:border-box;
 }
 
@@ -148,130 +124,58 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
 }
 
 #clueText{
-
-  margin-top:10px;
-
-  font-size:18px;
+  margin-top:8px;
+  font-size:17px;
 }
 
 #donate{
-
   position:fixed;
-
   bottom:4px;
   left:0;
-
   width:100%;
-
   text-align:center;
-
   font-size:10px;
-
   opacity:0.7;
 }
 
 #donate a{
-
   color:white;
-
   text-decoration:none;
 }
-
 </style>
-
 </head>
 
 <body>
 
+<div id="loadingScreen">Loading match...</div>
+
 <div id="app">
 
   <div id="menu" class="page">
-
     <h1>EPIC STRATEGIES</h1>
-
-    <button class="menu-button"
-      onclick="showPage('playMenu')">
-
-      PLAY
-
-    </button>
-
-    <button class="menu-button"
-      onclick="showPage('cluePage')">
-
-      GET CLUES
-
-    </button>
-
-    <button class="menu-button"
-      onclick="showPage('howTo')">
-
-      HOW TO PLAY
-
-    </button>
-
+    <button class="menu-button" onclick="showPage('playMenu')">PLAY</button>
+    <button class="menu-button" onclick="showPage('cluePage')">GET CLUES</button>
+    <button class="menu-button" onclick="showPage('howTo')">HOW TO PLAY</button>
   </div>
 
-  <div id="playMenu"
-       class="page"
-       style="display:none;">
-
+  <div id="playMenu" class="page" style="display:none;">
     <h1>SELECT MODE</h1>
-
-    <button class="menu-button"
-      onclick="startGame(2)">
-
-      CONNECT 5
-
-    </button>
-
-    <button class="menu-button"
-      onclick="startGame(3)">
-
-      CONNECT 4
-
-    </button>
-
-    <button class="menu-button"
-      onclick="startGame(4)">
-
-      CONNECT 3
-
-    </button>
-
-    <button class="menu-button"
-      onclick="showPage('menu')">
-
-      BACK
-
-    </button>
-
+    <button class="menu-button" onclick="startGame(2)">CONNECT 5</button>
+    <button class="menu-button" onclick="startGame(3)">CONNECT 4</button>
+    <button class="menu-button" onclick="startGame(4)">CONNECT 3</button>
+    <button class="menu-button" onclick="showPage('menu')">BACK</button>
   </div>
 
   <div id="gamePage">
-
-    <div id="status">
-      Waiting...
-    </div>
+    <div id="status">Waiting...</div>
 
     <div id="topBar">
-
-      <button id="clueButton"
-        class="small-btn"
-        onclick="useClue()"
-        disabled>
-
-        NO CLUE
-
-      </button>
-
-      <button class="small-btn"
-        onclick="showPage('menu')">
-
-        EXIT
-
-      </button>
-
+      <button id="selectButton" class="small-btn" onclick="confirmSelectedSquare()">SELECT SQUARE</button>
+      <button id="clue1Button" class="small-btn" onclick="useClue(1)" disabled>1 CLUE: WHO</button>
+      <button id="clue2Button" class="small-btn" onclick="useClue(2)" disabled>2 CLUES: AXIS</button>
+      <button id="clue3Button" class="small-btn" onclick="useClue(3)" disabled>3 CLUES: AREA</button>
+      <button class="small-btn" onclick="watchAdInGame()">+1 CLUE</button>
+      <button class="small-btn" onclick="showPage('menu')">EXIT</button>
     </div>
 
     <div id="boardWrapper">
@@ -279,506 +183,307 @@ body,h1,h2,h3,p,button,#status,#clueText,#clues{
     </div>
 
     <div id="clueText"></div>
-
   </div>
 
-  <div id="cluePage"
-       class="page"
-       style="display:none;">
-
+  <div id="cluePage" class="page" style="display:none;">
     <h1>CLUES</h1>
-
-    <p>
-      Watch videos to gain clues.
-    </p>
-
-    <button class="menu-button"
-      onclick="watchAd()">
-
-      WATCH VIDEO (+2 CLUES)
-
-    </button>
-
-    <div id="clues">
-      Clues: 0
-    </div>
-
-    <button class="menu-button"
-      onclick="showPage('menu')">
-
-      BACK
-
-    </button>
-
+    <p>Outside a match: 1 video gives 2 clues.</p>
+    <button class="menu-button" onclick="watchAdOutsideGame()">WATCH VIDEO (+2 CLUES)</button>
+    <div id="clues">Clues: 0</div>
+    <button class="menu-button" onclick="showPage('menu')">BACK</button>
   </div>
 
-  <div id="howTo"
-       class="page"
-       style="display:none;">
-
+  <div id="howTo" class="page" style="display:none;">
     <h1>HOW TO PLAY</h1>
-
-    <p>
-      Human moves are instant.
-    </p>
-
-    <p>
-      CPU turns reveal one by one.
-    </p>
-
-    <p>
-      Drag board with finger.
-    </p>
-
-    <button class="menu-button"
-      onclick="showPage('menu')">
-
-      BACK
-
-    </button>
-
+    <p>2 players: connect 5.</p>
+    <p>3 players: connect 4.</p>
+    <p>4 players: connect 3.</p>
+    <p>Tap a square to preview. Press SELECT SQUARE to place your piece.</p>
+    <p>Clues only activate when a threat is detected.</p>
+    <button class="menu-button" onclick="showPage('menu')">BACK</button>
   </div>
 
 </div>
 
 <div id="donate">
-  <a href="#">
-    adopt a dev
-  </a>
+  <a href="#">adopt a dev</a>
 </div>
 
 <script>
-
-const API =
-"https://epic-strategies.onrender.com";
+const API = "https://epic-strategies.onrender.com";
 
 let gameId = null;
-
-let clues = 0;
-
+let clues = Number(localStorage.getItem("clues") || 0);
 let currentThreat = null;
-
+let selected = null;
 let previewCell = null;
-
 let boardState = null;
-
 let locked = false;
 
-const palette = [
+const palette = ["#1f2937","#3b0764","#0f766e","#7c2d12","#374151","#1e3a8a","#4a044e"];
+const buttonPalette = ["#16a34a","#2563eb","#dc2626","#9333ea","#ca8a04","#0f766e"];
 
-  "#1f2937",
-  "#3b0764",
-  "#0f766e",
-  "#7c2d12",
-  "#374151",
-  "#1e3a8a",
-  "#4a044e"
-];
-
-const buttonPalette = [
-
-  "#16a34a",
-  "#2563eb",
-  "#dc2626",
-  "#9333ea",
-  "#ca8a04",
-  "#0f766e"
-];
+function saveClues(){
+  localStorage.setItem("clues", clues);
+  document.getElementById("clues").innerText = "Clues: " + clues;
+}
 
 function randomizeTheme(){
+  document.body.style.background = palette[Math.floor(Math.random() * palette.length)];
+  document.querySelectorAll(".menu-button,.small-btn").forEach(btn=>{
+    btn.style.background = buttonPalette[Math.floor(Math.random() * buttonPalette.length)];
+  });
+}
 
-  document.body.style.background =
-
-    palette[
-      Math.floor(
-        Math.random() * palette.length
-      )
-    ];
-
-  document
-    .querySelectorAll(
-      ".menu-button,.small-btn"
-    )
-    .forEach(btn=>{
-
-      btn.style.background =
-
-        buttonPalette[
-          Math.floor(
-            Math.random()
-            *
-            buttonPalette.length
-          )
-        ];
-    });
+function showLoading(show){
+  document.getElementById("loadingScreen").style.display = show ? "flex" : "none";
 }
 
 function showPage(page){
-
-  [
-    "menu",
-    "playMenu",
-    "gamePage",
-    "cluePage",
-    "howTo"
-  ].forEach(id=>{
-
-    document.getElementById(id)
-      .style.display = "none";
+  ["menu","playMenu","gamePage","cluePage","howTo"].forEach(id=>{
+    document.getElementById(id).style.display = "none";
   });
 
-  document.getElementById(page)
-    .style.display = "block";
-
+  document.getElementById(page).style.display = "block";
   randomizeTheme();
+  saveClues();
 }
 
 async function startGame(mode){
-
   showPage("gamePage");
+  showLoading(true);
 
   locked = false;
+  selected = null;
+  currentThreat = null;
 
   let players = [];
 
-  if(mode === 2){
+  if(mode === 2) players = ["p1","cpu2"];
+  if(mode === 3) players = ["p1","cpu2","cpu3"];
+  if(mode === 4) players = ["p1","cpu2","cpu3","cpu4"];
 
-    players = [
-      "p1",
-      "cpu2"
-    ];
-  }
-
-  if(mode === 3){
-
-    players = [
-      "p1",
-      "cpu2",
-      "cpu3"
-    ];
-  }
-
-  if(mode === 4){
-
-    players = [
-      "p1",
-      "cpu2",
-      "cpu3",
-      "cpu4"
-    ];
-  }
-
-  const res =
-    await fetch(
-      API + "/games",
-      {
-        method:"POST",
-
-        headers:{
-          "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify(players)
-      }
-    );
+  const res = await fetch(API + "/games", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(players)
+  });
 
   const data = await res.json();
 
   gameId = data.game_id;
-
   boardState = data.board;
 
   renderBoard(boardState);
-
   updateThreat(data.threat);
 
-  document.getElementById("status")
-    .innerText =
-    "Turn: PLAYER 1";
+  document.getElementById("status").innerText = "Turn: PLAYER 1";
+  document.getElementById("clueText").innerText = "";
+
+  showLoading(false);
 }
 
 function renderBoard(board){
-
   boardState = board;
 
-  const boardDiv =
-    document.getElementById("board");
-
+  const boardDiv = document.getElementById("board");
   boardDiv.innerHTML = "";
 
+  boardDiv.appendChild(makeLabel(""));
+
+  for(let x=1; x<=30; x++){
+    boardDiv.appendChild(makeLabel(x));
+  }
+
   board.forEach((row,y)=>{
+    boardDiv.appendChild(makeLabel(y + 1));
 
     row.forEach((cell,x)=>{
-
-      const div =
-        document.createElement("div");
-
+      const div = document.createElement("div");
       div.className = "cell";
 
       paintCell(div, cell);
 
-      div.addEventListener(
-        "touchstart",
-        ()=>previewMove(div)
-      );
-
-      div.addEventListener(
-        "touchend",
-        ()=>makeMove(x,y)
-      );
-
-      div.onclick =
-        ()=>makeMove(x,y);
+      div.addEventListener("click", ()=>previewSquare(div,x,y));
+      div.addEventListener("touchend", ()=>previewSquare(div,x,y));
 
       boardDiv.appendChild(div);
     });
   });
 }
 
+function makeLabel(text){
+  const div = document.createElement("div");
+  div.className = "label";
+  div.innerText = text;
+  return div;
+}
+
 function paintCell(div, cell){
-
   if(!cell){
-
-    div.style.background =
-      "#d2a679";
-
+    div.style.background = "#d2a679";
     return;
   }
 
   div.style.background =
-
-    cell === "p1"
-      ? "black"
-
-    : cell === "cpu2"
-      ? "white"
-
-    : cell === "cpu3"
-      ? "blue"
-
-    : "green";
+    cell === "p1" ? "black" :
+    cell === "cpu2" ? "white" :
+    cell === "cpu3" ? "blue" :
+    "green";
 }
 
-function previewMove(div){
-
+function previewSquare(div,x,y){
   if(locked) return;
+  if(!boardState || boardState[y][x] !== null) return;
 
   if(previewCell){
-
-    previewCell.classList.remove(
-      "preview"
-    );
+    previewCell.classList.remove("preview");
   }
 
   previewCell = div;
+  previewCell.classList.add("preview");
+  selected = {x,y};
 
-  previewCell.classList.add(
-    "preview"
-  );
+  document.getElementById("status").innerText =
+    "Selected row " + (y+1) + " / column " + (x+1);
+}
+
+async function confirmSelectedSquare(){
+  if(!selected || locked) return;
+
+  await makeMove(selected.x, selected.y);
 }
 
 function updateThreat(threat){
-
   currentThreat = threat;
 
-  const btn =
-    document.getElementById(
-      "clueButton"
-    );
+  const active = !!threat;
 
-  if(threat){
+  document.getElementById("clue1Button").disabled = !active;
+  document.getElementById("clue2Button").disabled = !active;
+  document.getElementById("clue3Button").disabled = !active;
 
-    btn.disabled = false;
-
-    btn.innerText =
-      "CLUE READY";
-
-  } else {
-
-    btn.disabled = true;
-
-    btn.innerText =
-      "NO CLUE";
-  }
+  document.getElementById("clue1Button").innerText = active ? "1 CLUE: WHO" : "NO CLUE";
+  document.getElementById("clue2Button").innerText = active ? "2 CLUES: AXIS" : "NO CLUE";
+  document.getElementById("clue3Button").innerText = active ? "3 CLUES: AREA" : "NO CLUE";
 }
 
 function sleep(ms){
-
-  return new Promise(resolve=>
-    setTimeout(resolve, ms)
-  );
+  return new Promise(resolve=>setTimeout(resolve, ms));
 }
 
 async function makeMove(x,y){
-
   if(!gameId || locked) return;
-
-  if(boardState[y][x] !== null)
-    return;
+  if(boardState[y][x] !== null) return;
 
   locked = true;
 
-  /*
-    PLAYER 1 APPEARS
-    INSTANTLY
-  */
-
   boardState[y][x] = "p1";
-
   renderBoard(boardState);
 
-  document.getElementById("status")
-    .innerText =
-    "CPU THINKING...";
+  selected = null;
+  previewCell = null;
 
-  const res =
-    await fetch(
-      API + "/move",
-      {
-        method:"POST",
+  document.getElementById("status").innerText = "CPU THINKING...";
 
-        headers:{
-          "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify({
-
-          game_id:gameId,
-
-          player:"p1",
-
-          x,
-          y
-        })
-      }
-    );
+  const res = await fetch(API + "/move", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({game_id:gameId, player:"p1", x, y})
+  });
 
   if(!res.ok){
-
     locked = false;
-
     return;
   }
 
-  const data =
-    await res.json();
+  const data = await res.json();
 
-  /*
-    RESET TO HUMAN MOVE
-    STATE
-  */
+  let animatedBoard = JSON.parse(JSON.stringify(boardState));
 
-  let animatedBoard =
-    JSON.parse(
-      JSON.stringify(boardState)
-    );
-
-  /*
-    CPU MOVES REVEAL
-    ONE BY ONE
-  */
-
-  for(const move of data.cpu_moves){
-
-    document.getElementById("status")
-      .innerText =
-      move.player +
-      " THINKING...";
-
+  for(const move of data.cpu_moves || []){
+    document.getElementById("status").innerText = move.player + " THINKING...";
     await sleep(2000);
-
-    animatedBoard[
-      move.y
-    ][
-      move.x
-    ] = move.player;
-
+    animatedBoard[move.y][move.x] = move.player;
     renderBoard(animatedBoard);
   }
 
   boardState = data.board;
-
   renderBoard(boardState);
-
   updateThreat(data.threat);
 
   if(data.winner){
-
-    document.getElementById("status")
-      .innerText =
-      "WINNER: " + data.winner;
-
-    alert(
-      "Winner: " + data.winner
-    );
-
+    document.getElementById("status").innerText = "WINNER: " + data.winner;
+    alert("Winner: " + data.winner);
     gameId = null;
-
     locked = false;
-
     return;
   }
 
-  document.getElementById("status")
-    .innerText =
-    "Turn: PLAYER 1";
-
+  document.getElementById("status").innerText = "Turn: PLAYER 1";
   locked = false;
 }
 
-function useClue(){
-
-  if(clues <= 0){
-
-    document.getElementById("clueText")
-      .innerText =
-      "No clues available.";
-
-    return;
-  }
-
+function useClue(level){
   if(!currentThreat){
-
-    document.getElementById("clueText")
-      .innerText =
-      "No threat detected.";
-
+    document.getElementById("clueText").innerText = "No threat detected.";
     return;
   }
 
-  clues--;
+  if(clues < level){
+    document.getElementById("clueText").innerText = "Not enough clues.";
+    return;
+  }
 
-  document.getElementById("clues")
-    .innerText =
-    "Clues: " + clues;
+  clues -= level;
+  saveClues();
 
-  document.getElementById("clueText")
-    .innerText =
-    "Danger near row "
-    + currentThreat.row;
+  if(level === 1){
+    document.getElementById("clueText").innerText =
+      "Threat by: " + currentThreat.player;
+  }
+
+  if(level === 2){
+    document.getElementById("clueText").innerText =
+      "Check row: " + currentThreat.row;
+  }
+
+  if(level === 3){
+    document.getElementById("clueText").innerText =
+      "Check row " + currentThreat.row + " / column " + currentThreat.col;
+  }
 }
 
-function watchAd(){
-
-  alert(
-    "Rewarded video placeholder"
-  );
+function simulateVideoReward(amount){
+  document.getElementById("clueText").innerText = "Video playing...";
 
   setTimeout(()=>{
+    const completed = true;
 
-    clues += 2;
+    if(completed){
+      clues += amount;
+      saveClues();
+      document.getElementById("clueText").innerText =
+        "Video complete. +" + amount + " clue(s).";
+    } else {
+      document.getElementById("clueText").innerText =
+        "Video has not completed.";
+    }
+  }, 2000);
+}
 
-    document.getElementById("clues")
-      .innerText =
-      "Clues: " + clues;
+function watchAdInGame(){
+  simulateVideoReward(1);
+}
 
-  },1000);
+function watchAdOutsideGame(){
+  simulateVideoReward(2);
 }
 
 randomizeTheme();
-
+saveClues();
 showPage("menu");
-
+showLoading(false);
 </script>
 
 </body>

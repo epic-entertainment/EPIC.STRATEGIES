@@ -50,12 +50,10 @@ def next_turn(players, current):
 
 def empty_cells(board):
     cells = []
-
     for y in range(BOARD_SIZE):
         for x in range(BOARD_SIZE):
             if board[y][x] is None:
                 cells.append((x, y))
-
     return cells
 
 
@@ -65,11 +63,7 @@ def check_direction(board, player, x, y, dx, dy):
     nx = x + dx
     ny = y + dy
 
-    while (
-        0 <= nx < BOARD_SIZE and
-        0 <= ny < BOARD_SIZE and
-        board[ny][nx] == player
-    ):
+    while 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[ny][nx] == player:
         count += 1
         nx += dx
         ny += dy
@@ -77,11 +71,7 @@ def check_direction(board, player, x, y, dx, dy):
     nx = x - dx
     ny = y - dy
 
-    while (
-        0 <= nx < BOARD_SIZE and
-        0 <= ny < BOARD_SIZE and
-        board[ny][nx] == player
-    ):
+    while 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[ny][nx] == player:
         count += 1
         nx -= dx
         ny -= dy
@@ -89,18 +79,39 @@ def check_direction(board, player, x, y, dx, dy):
     return count
 
 
-def check_winner(board, player, x, y, connect_n):
-    directions = [
-        (1, 0),
-        (0, 1),
-        (1, 1),
-        (1, -1),
-    ]
+def line_score(board, player, x, y, dx, dy):
+    total = 1
+    open_ends = 0
 
-    for dx, dy in directions:
+    nx = x + dx
+    ny = y + dy
+
+    while 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[ny][nx] == player:
+        total += 1
+        nx += dx
+        ny += dy
+
+    if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[ny][nx] is None:
+        open_ends += 1
+
+    nx = x - dx
+    ny = y - dy
+
+    while 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[ny][nx] == player:
+        total += 1
+        nx -= dx
+        ny -= dy
+
+    if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[ny][nx] is None:
+        open_ends += 1
+
+    return total, open_ends
+
+
+def check_winner(board, player, x, y, connect_n):
+    for dx, dy in [(1, 0), (0, 1), (1, 1), (1, -1)]:
         if check_direction(board, player, x, y, dx, dy) >= connect_n:
             return True
-
     return False
 
 
@@ -117,26 +128,55 @@ def winning_move(board, player, connect_n):
     return None
 
 
-def score_position(board, player, x, y):
+def move_strength(board, player, x, y, connect_n):
+    score = 0
+    fork_lines = 0
+
+    board[y][x] = player
+
+    for dx, dy in [(1, 0), (0, 1), (1, 1), (1, -1)]:
+        length, open_ends = line_score(board, player, x, y, dx, dy)
+
+        if length >= connect_n:
+            score += 100000
+
+        if length == connect_n - 1 and open_ends >= 1:
+            score += 5000
+            fork_lines += 1
+
+        if length == connect_n - 2 and open_ends == 2:
+            score += 900
+            fork_lines += 1
+
+        score += length * length * 20
+        score += open_ends * 25
+
+    if fork_lines >= 2:
+        score += 3000
+
+    board[y][x] = None
+
+    return score
+
+
+def cluster_score(board, player, x, y):
     score = 0
 
-    # Prefer cluster zones within 2 squares.
-    for yy in range(max(0, y - 2), min(BOARD_SIZE, y + 3)):
-        for xx in range(max(0, x - 2), min(BOARD_SIZE, x + 3)):
+    for yy in range(max(0, y - 3), min(BOARD_SIZE, y + 4)):
+        for xx in range(max(0, x - 3), min(BOARD_SIZE, x + 4)):
             cell = board[yy][xx]
 
             if cell is None:
                 continue
 
             distance = max(abs(xx - x), abs(yy - y))
-            weight = max(1, 3 - distance)
+            weight = max(1, 4 - distance)
 
             if cell == player:
-                score += 5 * weight
+                score += 12 * weight
             else:
-                score += 3 * weight
+                score += 8 * weight
 
-    # Light center preference if board is empty/open.
     center = BOARD_SIZE // 2
     score += max(0, 20 - abs(x - center) - abs(y - center))
 
@@ -144,54 +184,63 @@ def score_position(board, player, x, y):
 
 
 def cpu_move(board, player, players, connect_n):
-    # 1. Win immediately if possible.
-    move = winning_move(board, player, connect_n)
+    own_win = winning_move(board, player, connect_n)
+    if own_win:
+        return own_win
 
-    if move:
-        return move
-
-    # 2. Block any opponent who can win immediately.
     for enemy in players:
         if enemy == player:
             continue
 
-        move = winning_move(board, enemy, connect_n)
+        block = winning_move(board, enemy, connect_n)
+        if block:
+            return block
 
-        if move:
-            return move
-
-    # 3. Otherwise, cluster near existing action.
     best_move = None
     best_score = -1
 
     for x, y in empty_cells(board):
-        score = score_position(board, player, x, y)
+        score = 0
+
+        score += move_strength(board, player, x, y, connect_n) * 3
+
+        for enemy in players:
+            if enemy == player:
+                continue
+            score += move_strength(board, enemy, x, y, connect_n) * 2
+
+        score += cluster_score(board, player, x, y)
 
         if score > best_score:
             best_score = score
             best_move = (x, y)
 
-    return best_move
+    if best_move:
+        return best_move
+
+    cells = empty_cells(board)
+    return random.choice(cells) if cells else None
 
 
-def detect_threat(board, connect_n):
-    # Clue MVP: find a row where any player has connect_n - 1 pieces.
-    for y in range(BOARD_SIZE):
-        counts = {}
+def detect_threat(board, players, connect_n):
+    best = None
+    best_score = 0
 
-        for x in range(BOARD_SIZE):
-            player = board[y][x]
+    for player in players:
+        for x, y in empty_cells(board):
+            score = move_strength(board, player, x, y, connect_n)
 
-            if player is None:
-                continue
-
-            counts[player] = counts.get(player, 0) + 1
-
-            if counts[player] >= connect_n - 1:
-                return {
+            if score > best_score:
+                best_score = score
+                best = {
+                    "player": player,
                     "row": y + 1,
-                    "player": player
+                    "col": x + 1,
+                    "type": "threat"
                 }
+
+    if best_score >= 900:
+        return best
 
     return None
 
@@ -222,13 +271,7 @@ def run_cpu_cycle(game):
             "y": y
         })
 
-        if check_winner(
-            game["board"],
-            current,
-            x,
-            y,
-            game["connect_n"]
-        ):
+        if check_winner(game["board"], current, x, y, game["connect_n"]):
             game["winner"] = current
             return cpu_moves
 
@@ -268,7 +311,7 @@ def create_game(players: list[str]):
         "board": game["board"],
         "next_turn": game["turn"],
         "winner": game["winner"],
-        "threat": None,
+        "threat": detect_threat(game["board"], game["players"], game["connect_n"]),
         "cpu_moves": []
     }
 
@@ -295,30 +338,20 @@ def make_move(move: Move):
     if game["board"][move.y][move.x] is not None:
         raise HTTPException(status_code=400, detail="Occupied")
 
-    # Human p1 move is accepted immediately.
     game["board"][move.y][move.x] = "p1"
 
-    if check_winner(
-        game["board"],
-        "p1",
-        move.x,
-        move.y,
-        game["connect_n"]
-    ):
+    if check_winner(game["board"], "p1", move.x, move.y, game["connect_n"]):
         game["winner"] = "p1"
         cpu_moves = []
     else:
-        # CPU cycle after p1: cpu2 → cpu3 → cpu4 → back to p1.
         game["turn"] = next_turn(game["players"], "p1")
         cpu_moves = run_cpu_cycle(game)
-
-    threat = detect_threat(game["board"], game["connect_n"])
 
     return {
         "board": game["board"],
         "next_turn": game["turn"],
         "winner": game["winner"],
-        "threat": threat,
+        "threat": detect_threat(game["board"], game["players"], game["connect_n"]),
         "cpu_moves": cpu_moves
     }
 
@@ -334,7 +367,7 @@ def get_game(game_id: str):
         "board": game["board"],
         "next_turn": game["turn"],
         "winner": game["winner"],
-        "threat": detect_threat(game["board"], game["connect_n"]),
+        "threat": detect_threat(game["board"], game["players"], game["connect_n"]),
         "players": game["players"],
         "connect_n": game["connect_n"]
     }
